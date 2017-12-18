@@ -46,8 +46,8 @@ class Season(object):
         self.A = A
         self.Ind = Ind
         self.team_names = team_names
-        self.lambd = np.ones(len(self.team_names))
-        self.tau = np.ones(len(self.team_names)) / 10
+        #self.lambd = np.ones(len(self.team_names))
+        #self.tau = np.ones(len(self.team_names)) / 10
         self.PointsPerTeam0 = np.zeros([self.nr_teams, 1])
         self.Place0 = np.zeros([self.nr_teams, 1])
         self.avgPoints0 = np.zeros([self.nr_teams, 1])
@@ -78,8 +78,8 @@ class Season(object):
             tau += eta * df_t
             f, df_l, df_t = LogLikelihood(lambd, tau, self.H, self.A, self.Ind)
             df2 = (df_l ** 2 + df_t ** 2).sum()
-        self.lambd = lambd ** 2
-        self.tau = tau ** 2
+        #self.lambd = lambd ** 2
+        #self.tau = tau ** 2
         for _i in range(len(self.team_names)):
             _team=self.team_names[_i]
             self.Teams[_team].lmbd=lambd[_i]**2
@@ -137,9 +137,10 @@ class Season(object):
 
                     _home_name=self.team_names[_home]
                     _away_name = self.team_names[_away]
-
-                    lH = self.lambd[_home] + self.tau[_away]
-                    lA = self.lambd[_away] + self.tau[_home]
+                    lH=self.Teams[_home_name].lmbd+self.Teams[_away_name].tau
+                    lA = self.Teams[_home_name].tau + self.Teams[_away_name].lmbd
+                    #lH = self.lambd[_home] + self.tau[_away]
+                    #lA = self.lambd[_away] + self.tau[_home]
                     GH = np.random.poisson(lH, nScenarios)
                     GA = np.random.poisson(lA, nScenarios)
                     self.goals_scored[_home, :] +=GH
@@ -182,7 +183,11 @@ class Season(object):
         self.p_win=(self.Place==1).sum(axis=1)/nScenarios
         self.p_cl = (self.Place <= 4).sum(axis=1) / nScenarios
     def get_all_results(self):
-        df = pd.DataFrame({'lambda': self.lambd.round(3), 'tau': self.tau.round(3), 'Points': self.PointsPerTeam0[:, 0].astype(int),
+        lmbd=np.array([self.Teams[x].lmbd for x in self.team_names])
+        tau =np.array( [self.Teams[x].tau for x in self.team_names])
+
+
+        df = pd.DataFrame({'lambda': lmbd.round(3), 'tau': tau.round(3), 'Points': self.PointsPerTeam0[:, 0].astype(int),
                            'GF': self.goals_scored0[:, 0].astype(int), 'GA': self.goals_against0[:, 0].astype(int),
                            'Average Points': self.avgPoints.round(2), 'Win': 100 * self.p_win,
                            'CL': 100 * self.p_cl,'Average Goals Scored':self.goals_scored.mean(axis=1).round(2),
