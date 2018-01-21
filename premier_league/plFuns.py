@@ -1,6 +1,13 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+def evolve(p,q,lmbd,tau,k):
+    lmb_plus_tau=lmbd+tau[:,np.newaxis]
+    new_p=((np.exp(-lmb_plus_tau)*(lmb_plus_tau**k)).T*q).sum(axis=1)*p
+    new_p=new_p/new_p.sum()
+    new_q=((np.exp(-lmb_plus_tau)*(lmb_plus_tau**k))*p).sum(axis=1)*q
+    new_q=new_q/new_q.sum()
+    return new_p,new_q
 
 class Team(object):
     def __init__(self,name='team name',lmbd=1,tau=0,goals_scored=0,goals_against=0,points=0):
@@ -15,6 +22,22 @@ class Team(object):
         self.points_scenarios = points
         self.place_scenarios = 0
 
+        self.lmbd_set=np.linspace(0,10,1001)
+        self.p=self.lmbd_set*0+1
+        self.p=self.p/self.p.sum()
+        self.tau_set=np.linspace(0,10,1001)
+        self.q=self.tau_set*0+1
+        self.q=self.q/self.q.sum()
+    def simplify(self,threshold=1e-10):
+        ind=self.p>threshold
+        self.lmbd_set=self.lmbd_set[ind]
+        self.p=self.p[ind]
+        self.p=self.p/self.p.sum()
+        ind=self.q>threshold
+        self.tau_set=self.tau_set[ind]
+        self.q=self.q[ind]
+        self.q=self.q/self.q.sum()
+
     def versus(self,other_team,n_scenarios=int(1e4)):
         lH=self.lmbd+other_team.tau
         lA=other_team.lmbd+self.tau
@@ -27,6 +50,23 @@ class Team(object):
         GH=np.random.poisson(lH, n_scenarios)
         GA=np.random.poisson(lA, n_scenarios)
         return np.array([(GH>GA).sum() ,(GH==GA).sum() ,(GH<GA).sum()])/n_scenarios
+
+    def vs(self,other_team,n=int(1e4)):
+        lH=np.random.choice(self.lmbd_set,size=n,p=self.p)+np.random.choice(other_team.tau_set,size=n,p=other_team.q)
+        gH=np.random.poisson(lH)
+        lA=np.random.choice(self.tau_set,size=n,p=self.q)+np.random.choice(other_team.lmbd_set,size=n,p=other_team.p)
+        gA=np.random.poisson(lA)
+        match_des=self.name + ' vs ' + other_team.name
+        return gH,gA,match_des
+    def plt(self):
+        plt.plot(self.lmbd_set,self.p,label=self.name+' lmbda')
+        plt.plot(self.tau_set,self.q,label=self.name+' tau')
+        plt.legend()
+        plt.grid(True)
+        l,t=self.means()
+        plt.title('lambda: {:0.2f} tau: {:0.2f}'.format(l,t))
+    def means(self):
+        return self.p.dot(self.lmbd_set),self.q.dot(self.tau_set)
     
 
 class Season(object):
@@ -68,7 +108,7 @@ class Season(object):
         for _team in self.team_names:
             self.Teams[_team]=Team(name=_team)
 
-    def calibrate(self, eta=1 / 100):
+    def calibrate_old(self, eta=1 / 100):
         lambd = np.ones(len(self.team_names))
         tau = np.ones(len(self.team_names)) / 10
         f, df_l, df_t = LogLikelihood(lambd, tau, self.H, self.A, self.Ind)
@@ -84,6 +124,20 @@ class Season(object):
             _team=self.team_names[_i]
             self.Teams[_team].lmbd=lambd[_i]**2
             self.Teams[_team].tau=tau[_i]**2
+
+    def calibrate(self):
+        for index, row in self.all.iterrows():
+            gH=row['FTHG']
+            gA=row['FTAG']
+            team1=self.Teams[row['HomeTeam']]
+            team2=self.Teams[row['AwayTeam']]
+            #print(row['HomeTeam'],row['AwayTeam'])
+            team1.p,team2.q=evolve(team1.p,team2.q,team1.lmbd_set,team2.tau_set,gH)
+            team2.p,team1.q=evolve(team2.p,team1.q,team2.lmbd_set,team1.tau_set,gA)
+        for team_name in self.Teams:
+            team=self.Teams[team_name]
+            team.lmbd,team.tau = team.means()
+
 
     def season_so_far(self):
         for _home in range(self.nr_teams):
@@ -137,12 +191,13 @@ class Season(object):
 
                     _home_name=self.team_names[_home]
                     _away_name = self.team_names[_away]
-                    lH=self.Teams[_home_name].lmbd+self.Teams[_away_name].tau
-                    lA = self.Teams[_home_name].tau + self.Teams[_away_name].lmbd
+                    #lH=self.Teams[_home_name].lmbd+self.Teams[_away_name].tau
+                    #lA = self.Teams[_home_name].tau + self.Teams[_away_name].lmbd
                     #lH = self.lambd[_home] + self.tau[_away]
                     #lA = self.lambd[_away] + self.tau[_home]
-                    GH = np.random.poisson(lH, nScenarios)
-                    GA = np.random.poisson(lA, nScenarios)
+                    #GH = np.random.poisson(lH, nScenarios)
+                    #GA = np.random.poisson(lA, nScenarios)
+                    GH,GA,_=self.Teams[_home_name].vs(self.Teams[_away_name])
                     self.goals_scored[_home, :] +=GH
                     self.goals_against[_home, :] += GA
                     self.goals_scored[_away, :] += GA
