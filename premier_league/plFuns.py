@@ -106,14 +106,17 @@ class Season(object):
         for _team in self.team_names:
             self.Teams[_team] = Team(name=_team)
 
-    def calibrate(self):
+    def calibrate(self, up_to='2018-12-31'):
+        up_to = pd.to_datetime(up_to)
         for index, row in self.all.iterrows():
-            gH = row['FTHG']
-            gA = row['FTAG']
-            team1 = self.Teams[row['HomeTeam']]
-            team2 = self.Teams[row['AwayTeam']]
-            team1.p, team2.q = evolve(team1.p, team2.q, team1.lmbd_set, team2.tau_set, gH)
-            team2.p, team1.q = evolve(team2.p, team1.q, team2.lmbd_set, team1.tau_set, gA)
+            the_date=pd.to_datetime(row['Date'])
+            if the_date <= up_to:
+                gH = row['FTHG']
+                gA = row['FTAG']
+                team1 = self.Teams[row['HomeTeam']]
+                team2 = self.Teams[row['AwayTeam']]
+                team1.p, team2.q = evolve(team1.p, team2.q, team1.lmbd_set, team2.tau_set, gH)
+                team2.p, team1.q = evolve(team2.p, team1.q, team2.lmbd_set, team1.tau_set, gA)
         for team_name in self.Teams:
             team = self.Teams[team_name]
             team.simplify()
