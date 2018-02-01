@@ -102,6 +102,7 @@ class Season(object):
 
         self.p_win = np.zeros([1])
         self.p_cl = np.zeros([1])
+        self.p_rel = np.zeros([1])
         self.Teams = dict()
         for _team in self.team_names:
             self.Teams[_team] = Team(name=_team)
@@ -213,6 +214,7 @@ class Season(object):
         self.avgPoints = self.PointsPerTeam.mean(axis=1)
         self.p_win = (self.Place == 1).sum(axis=1) / nScenarios
         self.p_cl = (self.Place <= 4).sum(axis=1) / nScenarios
+        self.p_rel = (self.Place >= 17).sum(axis=1) / nScenarios
 
     def get_all_results(self):
         lmbd = np.array([self.Teams[x].lmbd for x in self.team_names])
@@ -221,7 +223,7 @@ class Season(object):
         df = pd.DataFrame(
             {'lambda': lmbd.round(3), 'tau': tau.round(3), 'Points': self.PointsPerTeam0[:, 0].astype(int),
              'GF': self.goals_scored0[:, 0].astype(int), 'GA': self.goals_against0[:, 0].astype(int),
-             'Average Points': self.avgPoints.round(2), 'Win': 100 * self.p_win,
+             'Average Points': self.avgPoints.round(2), 'Win': 100 * self.p_win,'Relegated': 100 * self.p_rel,
              'CL': 100 * self.p_cl, 'Average Goals Scored': self.goals_scored.mean(axis=1).round(2),
              'Average Goals Against': self.goals_against.mean(axis=1).round(2)}, index=self.team_names)
         df = df.sort_values(by='Average Points', ascending=False)
