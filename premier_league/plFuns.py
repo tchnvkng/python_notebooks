@@ -25,10 +25,10 @@ class Team(object):
         self.points_scenarios = points
         self.place_scenarios = 0
 
-        self.lmbd_set = np.linspace(0, 10, 1001)
+        self.lmbd_set = np.linspace(0, 5, 1001)
         self.p = self.lmbd_set * 0 + 1
         self.p = self.p / self.p.sum()
-        self.tau_set = np.linspace(0, 10, 1001)
+        self.tau_set = np.linspace(0, 5, 1001)
         self.q = self.tau_set * 0 + 1
         self.q = self.q / self.q.sum()
 
@@ -282,14 +282,3 @@ def GetMainDetails(data, upto=pd.datetime(2115, 8, 9)):
     A = np.matrix(A)
     Ind = np.matrix(Ind)
     return H, A, Ind, list(team_names)
-
-
-def LogLikelihood(lambd, tau, H, A, Ind):
-    M1 = Ind + Ind.transpose()
-    M2 = np.multiply(Ind, H) + 1.0 * np.multiply(Ind.transpose(), A.transpose())
-    lpt = (lambd ** 2)[:, np.newaxis] + (tau ** 2)
-    f = -np.trace(lpt * M1) + np.trace(np.log(lpt) * M2)
-    M3 = -M1 + np.divide(M2, lpt)
-    df_l = np.asarray(M3.sum(axis=1)).reshape(-1) * lambd
-    df_t = np.asarray(M3.sum(axis=0)).reshape(-1) * tau
-    return f, df_l, df_t
