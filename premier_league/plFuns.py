@@ -77,20 +77,14 @@ class Season(object):
                           'DE': 'http://www.football-data.co.uk/mmz4281/1718/D1.csv',
                           'NL': 'http://www.football-data.co.uk/mmz4281/1718/N1.csv'
                           })
-        self.url = urls[country]
+        self.url = urls[country[:2]]
         self.all = pd.read_csv(self.url,usecols=['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
-        self.all = self.all.dropna()
-        H, A, Ind, team_names = GetMainDetails(self.all)
-        self.nr_teams = len(team_names)
-        self.H = H
-        self.A = A
-        self.Ind = Ind
-        self.team_names = team_names
-        self.PointsPerTeam0 = np.zeros([self.nr_teams, 1])
-        self.Place0 = np.zeros([self.nr_teams, 1])
-        self.avgPoints0 = np.zeros([self.nr_teams, 1])
-        self.goals_scored0 = np.zeros([self.nr_teams, 1])
-        self.goals_against0 = np.zeros([self.nr_teams, 1])
+
+        self.PointsPerTeam0 = None
+        self.Place0 =None
+        self.avgPoints0 = None
+        self.goals_scored0 = None
+        self.goals_against0 =None
 
         self.PointsPerTeam = np.zeros([1])
         self.Place = np.zeros([1])
@@ -103,11 +97,39 @@ class Season(object):
         self.p_win = np.zeros([1])
         self.p_cl = np.zeros([1])
         self.p_rel = np.zeros([1])
+
+        self.nr_teams = 0
+        self.H = None
+        self.A = None
+        self.Ind = None
+        self.team_names = None
         self.Teams = dict()
+
+    def add_match(self,date,home_team,home_goals,away_team,away_goals):
+        i=self.all.index.max()+1
+        aa=pd.DataFrame({'Date':date,'HomeTeam':home_team,'AwayTeam':away_team,'FTHG':home_goals,'FTAG':away_goals},index=[i])
+        self.all=self.all.append(aa)
+
+
+    def preprocess(self):
+        self.all = self.all.dropna()
+        H, A, Ind, team_names = GetMainDetails(self.all)
+        self.nr_teams = len(team_names)
+        self.PointsPerTeam0 = np.zeros([self.nr_teams, 1])
+        self.Place0 = np.zeros([self.nr_teams, 1])
+        self.avgPoints0 = np.zeros([self.nr_teams, 1])
+        self.goals_scored0 = np.zeros([self.nr_teams, 1])
+        self.goals_against0 = np.zeros([self.nr_teams, 1])
+        self.H = H
+        self.A = A
+        self.Ind = Ind
+        self.team_names = team_names
         for _team in self.team_names:
             self.Teams[_team] = Team(name=_team)
 
+
     def calibrate(self, up_to='2018-12-31'):
+        self.preprocess()
         up_to = pd.to_datetime(up_to)
         for index, row in self.all.iterrows():
             the_date=pd.to_datetime(row['Date'])
