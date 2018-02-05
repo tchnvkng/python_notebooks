@@ -26,6 +26,7 @@ def calibrate(teams,all_data):
                 away_team.simplify()
     return teams
 
+
 def create_teams(all_data):
     teams=dict()
     all_team_names=dict()
@@ -138,7 +139,7 @@ class Season:
             match = home_team + ' v ' + away_team
             home_goals = row['FTHG']
             away_goals = row['FTAG']
-            if not (np.isnan(home_goals) or np.isnan(away_goals)):
+            if not (np.isnan(home_goals) or np.isnan(away_goals)) and home_team in self.teams and away_team in self.teams:
                 self.current_goals[home_team] += home_goals
                 self.current_goals[away_team] += away_goals
                 self.current_goals_against[home_team] += away_goals
