@@ -288,8 +288,10 @@ class Season:
         p_cl = (100 * (self.place_per_team <= self.nr_cl).sum(axis=1) / self.place_per_team.shape[1]).round(2)
         p_degr = (
         100 * (self.place_per_team > self.nr_teams - self.nr_degr).sum(axis=1) / self.place_per_team.shape[1]).round(2)
-        points_up = np.percentile(self.points_per_team, 97.5, axis=1).round(0)
-        points_down = np.percentile(self.points_per_team, 2.5, axis=1).round(0)
+        points_up = np.percentile(self.points_per_team, 95, axis=1).round(0)
+        points_down = np.percentile(self.points_per_team, 5, axis=1).round(0)
+        place_up = np.percentile(self.place_per_team, 5, axis=1).round(0)
+        place_down = np.percentile(self.place_per_team, 95, axis=1).round(0)
         team_names = []
         lmbd = []
         tau = []
@@ -306,6 +308,8 @@ class Season:
         df = pd.DataFrame({'Points (mean)': average_points,
                            'Points (high)': points_up,
                            'Points (low)': points_down,
+                           'Place (high)': place_up,
+                           'Place (low)': place_down,
                            'GF': average_goals,
                            'GA': average_goals_against,
                            'GD': average_goals - average_goals_against,
@@ -316,7 +320,7 @@ class Season:
                            'Deff': tau},
                           index=team_names)
         df = df.sort_values(by='Points (mean)', ascending=False)
-        cols = ['Points (mean)', 'Points (low)', 'Points (high)', 'Win', 'CL', 'Off', 'Deff', 'Degr']
+        cols = ['Points (mean)', 'Points (low)', 'Points (high)', 'Place (low)','Place (high)','Win', 'CL', 'Off', 'Deff', 'Degr']
         return df[cols]
 
     def team_report(self, team_name):
@@ -333,13 +337,16 @@ class Season:
         ax[0, 0].set_title('Place')
         x, y = p_plot(self.points_per_team[self.team_id[team_name], :])
         ax[0, 1].bar(x, y)
+        ax[0, 1].bar(self.current_points[team_name], y.max())
         ax[0, 1].set_title('Points')
         x, y = p_plot(
             self.goals_per_team[self.team_id[team_name], :] - self.goals_against_per_team[self.team_id[team_name], :])
         ax[1, 0].bar(x, y)
+        ax[1,0].bar(self.current_goals[team_name]-self.current_goals_against[team_name],y.max())
         ax[1, 0].set_title('Goal Difference')
         x, y = p_plot(self.goals_per_team[self.team_id[team_name], :])
         ax[1, 1].bar(x, y)
+        ax[1,1].bar(self.current_goals[team_name],y.max())
         ax[1, 1].set_title('Goals')
 
         for _i in ax:
