@@ -56,7 +56,6 @@ class Team(object):
         match_des = self.name + ' vs ' + other_team.name
         return gH, gA, match_des
 
-    def plt(self):
         plt.plot(self.lmbd_set, self.p, label=self.name + ' lmbda')
         plt.plot(self.tau_set, self.q, label=self.name + ' tau')
         plt.legend()
