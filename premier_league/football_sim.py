@@ -4,37 +4,37 @@ import matplotlib.pyplot as plt
 
 
 def get_data(urls):
-    all_data=dict()
+    all_data = dict()
 
     for country in urls:
-        all_data[country]=pd.read_csv(urls[country],usecols=['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
+        all_data[country] = pd.read_csv(urls[country], usecols=['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
     return all_data
 
 
-def calibrate(teams,all_data):
+def calibrate(teams, all_data):
     for _country in all_data:
-        _data=all_data[_country]
+        _data = all_data[_country]
         for index, row in _data.iterrows():
-            home_team=teams[row['HomeTeam']]
-            away_team=teams[row['AwayTeam']]
-            hg=row['FTHG']
-            ag=row['FTAG']
+            home_team = teams[row['HomeTeam']]
+            away_team = teams[row['AwayTeam']]
+            hg = row['FTHG']
+            ag = row['FTAG']
             if not (np.isnan(hg) or np.isnan(ag)):
-                home_team.scored_against(away_team,hg)
-                away_team.scored_against(home_team,ag)
+                home_team.scored_against(away_team, hg)
+                away_team.scored_against(home_team, ag)
                 home_team.simplify()
                 away_team.simplify()
     return teams
 
 
 def create_teams(all_data):
-    teams=dict()
-    all_team_names=dict()
+    teams = dict()
+    all_team_names = dict()
     for _country in all_data:
-        all_team_names[_country]=set(all_data[_country]['HomeTeam']).union(set(all_data[_country]['AwayTeam']))
-        _team_names=all_team_names[_country]
+        all_team_names[_country] = set(all_data[_country]['HomeTeam']).union(set(all_data[_country]['AwayTeam']))
+        _team_names = all_team_names[_country]
         for _team_name in _team_names:
-            teams[_team_name]=Team(name=_team_name,country=_country)
+            teams[_team_name] = Team(name=_team_name, country=_country)
     return teams
 
 
@@ -60,8 +60,28 @@ class Team(object):
         self.q = self.q / self.q.sum()
 
     def __add__(self, other_team, n_scenarios=int(1e4)):
-        GH, GA, match_des = self.vs(other_team, n=n_scenarios)
-        return np.array([(GH > GA).sum(), (GH == GA).sum(), (GH < GA).sum()]) / n_scenarios
+        g = np.zeros([n_scenarios, 2])
+        g[:, 0], g[:, 1], _ = self.vs(other_team, n=n_scenarios)
+        u, c = np.unique(g, axis=0, return_counts=True)
+        loc = (-c).argsort()
+        u = u[loc, :]
+        c = c[loc]
+        x = np.arange(u.shape[0])
+
+        ind = [u[:, 0] > u[:, 1], u[:, 0] == u[:, 1], u[:, 0] < u[:, 1]]
+
+        p = 100 * c / n_scenarios
+        lab = [self.name + ' win', 'draw', other_team.name + ' win']
+        col = ['green', 'yellow', 'red']
+        for _ind, _l, _c in zip(ind, lab, col):
+            y = p[_ind]
+            plt.bar(x[_ind], y, label='{:s}: {:0.1f}%'.format(_l, y.sum()))
+        plt.xticks(x, u, rotation='vertical');
+        plt.legend()
+
+        plt.xlim(-0.5, x[p > 0.5].max() + 0.5)
+        plt.grid()
+        plt.title(g.mean(axis=0))
 
     def vs(self, other_team, n=int(1e4)):
         lH = np.random.choice(self.lmbd_set, size=n, p=self.p) + np.random.choice(other_team.tau_set, size=n,
@@ -73,13 +93,20 @@ class Team(object):
         match_des = self.name + ' vs ' + other_team.name
         return gH, gA, match_des
 
-    def plt(self):
-        plt.plot(self.lmbd_set, self.p, label=self.name + ' lmbda')
-        plt.plot(self.tau_set, self.q, label=self.name + ' tau')
-        plt.legend()
-        plt.grid(True)
+    def plt(self, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots(1, 2)
         l, t = self.means()
-        plt.title('lambda: {:0.2f} tau: {:0.2f}'.format(l, t))
+        p1 = ax[0].plot(self.lmbd_set, self.p, label=self.name + ' off: {:0.2f}'.format(l))
+        ax[1].plot(self.tau_set, self.q, c=p1[0].get_color(), label=self.name + ' def: {:0.2f}'.format(t))
+        ax[0].legend()
+        ax[0].grid(True)
+        ax[1].legend()
+        ax[1].grid(True)
+        # l, t = self.means()
+        # ax[0].set_title('lambda: {:0.2f}'.format(l))
+        # ax[1].set_title('tau: {:0.2f}'.format(t))
+        return ax
 
     def means(self):
         return self.p.dot(self.lmbd_set), self.q.dot(self.tau_set)
@@ -139,7 +166,8 @@ class Season:
             match = home_team + ' v ' + away_team
             home_goals = row['FTHG']
             away_goals = row['FTAG']
-            if not (np.isnan(home_goals) or np.isnan(away_goals)) and home_team in self.teams and away_team in self.teams:
+            if not (np.isnan(home_goals) or np.isnan(
+                    away_goals)) and home_team in self.teams and away_team in self.teams:
                 self.current_goals[home_team] += home_goals
                 self.current_goals[away_team] += away_goals
                 self.current_goals_against[home_team] += away_goals
@@ -287,7 +315,8 @@ class Season:
         p_win = (100 * (self.place_per_team == 1).sum(axis=1) / self.place_per_team.shape[1]).round(2)
         p_cl = (100 * (self.place_per_team <= self.nr_cl).sum(axis=1) / self.place_per_team.shape[1]).round(2)
         p_degr = (
-        100 * (self.place_per_team > self.nr_teams - self.nr_degr).sum(axis=1) / self.place_per_team.shape[1]).round(2)
+                100 * (self.place_per_team > self.nr_teams - self.nr_degr).sum(axis=1) / self.place_per_team.shape[
+            1]).round(2)
         points_up = np.percentile(self.points_per_team, 95, axis=1).round(0)
         points_down = np.percentile(self.points_per_team, 5, axis=1).round(0)
         place_up = np.percentile(self.place_per_team, 5, axis=1).round(0)
@@ -320,7 +349,8 @@ class Season:
                            'Deff': tau},
                           index=team_names)
         df = df.sort_values(by='Points (mean)', ascending=False)
-        cols = ['Points (mean)', 'Points (low)', 'Points (high)', 'Place (low)','Place (high)','Win', 'CL', 'Off', 'Deff', 'Degr']
+        cols = ['Points (mean)', 'Points (low)', 'Points (high)', 'Place (low)', 'Place (high)', 'Win', 'CL', 'Off',
+                'Deff', 'Degr']
         return df[cols]
 
     def team_report(self, team_name):
@@ -342,11 +372,11 @@ class Season:
         x, y = p_plot(
             self.goals_per_team[self.team_id[team_name], :] - self.goals_against_per_team[self.team_id[team_name], :])
         ax[1, 0].bar(x, y)
-        ax[1,0].bar(self.current_goals[team_name]-self.current_goals_against[team_name],y.max())
+        ax[1, 0].bar(self.current_goals[team_name] - self.current_goals_against[team_name], y.max())
         ax[1, 0].set_title('Goal Difference')
         x, y = p_plot(self.goals_per_team[self.team_id[team_name], :])
         ax[1, 1].bar(x, y)
-        ax[1,1].bar(self.current_goals[team_name],y.max())
+        ax[1, 1].bar(self.current_goals[team_name], y.max())
         ax[1, 1].set_title('Goals')
 
         for _i in ax:
