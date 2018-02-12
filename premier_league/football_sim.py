@@ -228,25 +228,59 @@ class Season:
         place_if_away = self.place_per_team[ref_team_id, away_won]
         place_if_draw = self.place_per_team[ref_team_id, draw]
 
+
         fig, ax = plt.subplots(1, 1)
         _width = 0.2
         x, y = p_plot(self.place_per_team[ref_team_id])
         p_cl = 100 * (self.place_per_team[ref_team_id] <= 4).sum() / self.place_per_team[ref_team_id].shape[0]
-        ax.bar(x - 1.5 * _width, y, width=0.25, label='Current. CL: {:0.2f}'.format(p_cl))
-        ax.set_xticks(x)
+        xx=np.zeros(x.shape[0]+1)
+        yy=np.zeros(y.shape[0]+1)
+        x_cl=x[-1]+1
+        xx[:-1]=x
+        xx[-1]=x_cl
+        yy[:-1]=y
+        yy[-1]=p_cl
+        xx0=np.array(xx)
+
+        ax.bar(xx - 1.5 * _width, yy, width=_width, label='Current. CL: {:0.2f}'.format(p_cl))
+
 
         x, y = p_plot(place_if_home)
         p_cl = 100 * (place_if_home <= 4).sum() / place_if_home.shape[0]
-        ax.bar(x - 0.5 * _width, y, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_home, p_cl))
+        xx=np.zeros(x.shape[0]+1)
+        yy=np.zeros(y.shape[0]+1)
+        xx[:-1]=x
+        xx[-1]=x_cl
+        yy[:-1]=y
+        yy[-1]=p_cl
+        ax.bar(xx - 0.5 * _width, yy, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_home, p_cl))
 
         x, y = p_plot(place_if_away)
         p_cl = 100 * (place_if_away <= 4).sum() / place_if_away.shape[0]
-        ax.bar(x + 0.5 * _width, y, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_away, p_cl))
+        xx=np.zeros(x.shape[0]+1)
+        yy=np.zeros(y.shape[0]+1)
+        xx[:-1]=x
+        xx[-1]=x_cl
+        yy[:-1]=y
+        yy[-1]=p_cl
+        ax.bar(xx + 0.5 * _width, yy, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_away, p_cl))
 
         x, y = p_plot(place_if_draw)
         p_cl = 100 * (place_if_draw <= 4).sum() / place_if_draw.shape[0]
-        ax.bar(x + 1.5 * _width, y, width=_width, label='Draw. CL: {:0.2f}'.format(p_cl))
+        xx=np.zeros(x.shape[0]+1)
+        yy=np.zeros(y.shape[0]+1)
+        xx[:-1]=x
+        xx[-1]=x_cl
+        yy[:-1]=y
+        yy[-1]=p_cl
+        ax.bar(xx + 1.5 * _width, yy, width=_width, label='Draw. CL: {:0.2f}'.format(p_cl))
         ax.grid(True)
+        _label=[]
+        for _x in xx0:
+            _label.append(str(int(_x)))
+        _label[-1]='CL'
+        ax.set_xticks(xx0)
+        ax.set_xticklabels(_label)
         ax.legend()
         ax.set_title(ref_team)
         fig.set_size_inches(16, 9)
