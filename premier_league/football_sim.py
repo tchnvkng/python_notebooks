@@ -205,7 +205,7 @@ class Season:
         self.simulation_done = True
         self.simulation_processed = False
 
-    def what_if(self, match, ref_team='Man United'):
+    def what_if(self, match, ref_team='Man United',show_plot=True):
         if not self.simulation_done:
             print('simulation not yet done, simulating')
             self.simulate_season()
@@ -227,63 +227,65 @@ class Season:
         place_if_home = self.place_per_team[ref_team_id, home_won]
         place_if_away = self.place_per_team[ref_team_id, away_won]
         place_if_draw = self.place_per_team[ref_team_id, draw]
+        p_cl=np.zeros(4)
+        p_cl[0] = 100 * (self.place_per_team[ref_team_id] <= 4).sum() / self.place_per_team[ref_team_id].shape[0]
+        p_cl[1] = 100 * (place_if_home <= 4).sum() / place_if_home.shape[0]
+        p_cl[2] = 100 * (place_if_away <= 4).sum() / place_if_away.shape[0]
+        p_cl[3] = 100 * (place_if_draw <= 4).sum() / place_if_draw.shape[0]
+
+        if show_plot:
+            fig, ax = plt.subplots(1, 1)
+            _width = 0.2
+            x, y = p_plot(self.place_per_team[ref_team_id])
+            xx=np.zeros(x.shape[0]+1)
+            yy=np.zeros(y.shape[0]+1)
+            x_cl=x[-1]+1
+            xx[:-1]=x
+            xx[-1]=x_cl
+            yy[:-1]=y
+            yy[-1]=p_cl[0]
+            xx0=np.array(xx)
+
+            ax.bar(xx - 1.5 * _width, yy, width=_width, label='Current. CL: {:0.2f}'.format(p_cl[0]))
 
 
-        fig, ax = plt.subplots(1, 1)
-        _width = 0.2
-        x, y = p_plot(self.place_per_team[ref_team_id])
-        p_cl = 100 * (self.place_per_team[ref_team_id] <= 4).sum() / self.place_per_team[ref_team_id].shape[0]
-        xx=np.zeros(x.shape[0]+1)
-        yy=np.zeros(y.shape[0]+1)
-        x_cl=x[-1]+1
-        xx[:-1]=x
-        xx[-1]=x_cl
-        yy[:-1]=y
-        yy[-1]=p_cl
-        xx0=np.array(xx)
+            x, y = p_plot(place_if_home)
+            xx=np.zeros(x.shape[0]+1)
+            yy=np.zeros(y.shape[0]+1)
+            xx[:-1]=x
+            xx[-1]=x_cl
+            yy[:-1]=y
+            yy[-1]=p_cl[1]
+            ax.bar(xx - 0.5 * _width, yy, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_home, p_cl[1]))
 
-        ax.bar(xx - 1.5 * _width, yy, width=_width, label='Current. CL: {:0.2f}'.format(p_cl))
+            x, y = p_plot(place_if_away)
+            xx=np.zeros(x.shape[0]+1)
+            yy=np.zeros(y.shape[0]+1)
+            xx[:-1]=x
+            xx[-1]=x_cl
+            yy[:-1]=y
+            yy[-1]=p_cl[2]
+            ax.bar(xx + 0.5 * _width, yy, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_away, p_cl[2]))
 
-
-        x, y = p_plot(place_if_home)
-        p_cl = 100 * (place_if_home <= 4).sum() / place_if_home.shape[0]
-        xx=np.zeros(x.shape[0]+1)
-        yy=np.zeros(y.shape[0]+1)
-        xx[:-1]=x
-        xx[-1]=x_cl
-        yy[:-1]=y
-        yy[-1]=p_cl
-        ax.bar(xx - 0.5 * _width, yy, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_home, p_cl))
-
-        x, y = p_plot(place_if_away)
-        p_cl = 100 * (place_if_away <= 4).sum() / place_if_away.shape[0]
-        xx=np.zeros(x.shape[0]+1)
-        yy=np.zeros(y.shape[0]+1)
-        xx[:-1]=x
-        xx[-1]=x_cl
-        yy[:-1]=y
-        yy[-1]=p_cl
-        ax.bar(xx + 0.5 * _width, yy, width=_width, label='{:s} Win. CL: {:0.2f}'.format(_away, p_cl))
-
-        x, y = p_plot(place_if_draw)
-        p_cl = 100 * (place_if_draw <= 4).sum() / place_if_draw.shape[0]
-        xx=np.zeros(x.shape[0]+1)
-        yy=np.zeros(y.shape[0]+1)
-        xx[:-1]=x
-        xx[-1]=x_cl
-        yy[:-1]=y
-        yy[-1]=p_cl
-        ax.bar(xx + 1.5 * _width, yy, width=_width, label='Draw. CL: {:0.2f}'.format(p_cl))
-        ax.grid(True)
-        _label=[]
-        for _x in xx0:
-            _label.append(str(int(_x)))
-        _label[-1]='CL'
-        ax.set_xticks(xx0)
-        ax.set_xticklabels(_label)
-        ax.legend()
-        ax.set_title(ref_team)
-        fig.set_size_inches(16, 9)
+            x, y = p_plot(place_if_draw)
+            xx=np.zeros(x.shape[0]+1)
+            yy=np.zeros(y.shape[0]+1)
+            xx[:-1]=x
+            xx[-1]=x_cl
+            yy[:-1]=y
+            yy[-1]=p_cl[3]
+            ax.bar(xx + 1.5 * _width, yy, width=_width, label='Draw. CL: {:0.2f}'.format(p_cl[3]))
+            ax.grid(True)
+            _label=[]
+            for _x in xx0:
+                _label.append(str(int(_x)))
+            _label[-1]='CL'
+            ax.set_xticks(xx0)
+            ax.set_xticklabels(_label)
+            ax.legend()
+            ax.set_title(ref_team)
+            fig.set_size_inches(16, 9)
+        return p_cl
 
     def process_simulation(self):
         n_scenarios = self.simulated_home_goals.shape[1]
