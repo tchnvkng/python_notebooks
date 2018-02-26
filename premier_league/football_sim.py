@@ -374,10 +374,10 @@ class Season:
         lmbd = np.array(lmbd).round(2)
 
         df = pd.DataFrame({'Points (mean)': average_points,
-                           'Points (high)': points_up,
-                           'Points (low)': points_down,
-                           'Place (high)': place_up,
-                           'Place (low)': place_down,
+                           'Points (high)': points_up.astype(int),
+                           'Points (low)': points_down.astype(int),
+                           'Place (high)': place_up.astype(int),
+                           'Place (low)': place_down.astype(int),
                            'GF': average_goals,
                            'GA': average_goals_against,
                            'GD': average_goals - average_goals_against,
