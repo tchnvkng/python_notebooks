@@ -47,10 +47,10 @@ class Team(object):
     def __init__(self, name='team name', country='SH'):
         self.name = name
         self.country = country
-        self.lmbd_set = np.linspace(0, 5, 1001)
+        self.lmbd_set = np.linspace(0, 3, 1001)
         self.p = self.lmbd_set * 0 + 1
         self.p = self.p / self.p.sum()
-        self.tau_set = np.linspace(0, 5, 1001)
+        self.tau_set = np.linspace(0, 2, 1001)
         self.q = self.tau_set * 0 + 1
         self.q = self.q / self.q.sum()
 
@@ -58,11 +58,20 @@ class Team(object):
         ind = self.p > threshold
         self.lmbd_set = self.lmbd_set[ind]
         self.p = self.p[ind]
-        self.p = self.p / self.p.sum()
         ind = self.q > threshold
         self.tau_set = self.tau_set[ind]
         self.q = self.q[ind]
+        self.normalize()
+
+    def normalize(self):
+        self.p = self.p / self.p.sum()
         self.q = self.q / self.q.sum()
+
+    def forget(self,p_mix=0.5):
+        self.p=(1-p_mix)*self.p+p_mix/self.p.shape[0]
+        self.q=(1-p_mix)*self.q+p_mix/self.q.shape[0]
+        self.normalize()
+
 
     def __add__(self, other_team, n_scenarios=int(1e5)):
         g = np.zeros([n_scenarios, 2])
