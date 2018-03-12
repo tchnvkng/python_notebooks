@@ -9,12 +9,19 @@ def get_data(urls):
     for country in urls:
         all_data[country] = pd.read_csv(urls[country], usecols=['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
         all_data[country]['Date']=pd.to_datetime(all_data[country]['Date'])
+        all_data[country] = all_data[country].dropna()
+        all_data[country]['FTHG'] =all_data[country]['FTHG'].astype(int)
+        all_data[country]['FTAG'] = all_data[country]['FTAG'].astype(int)
+
     return all_data
+
+
 def add_match(data,home,home_goals,away,away_goals):
     max_ind=data.index.max()
     a=pd.DataFrame({'Date':pd.to_datetime('today'),'HomeTeam':home,'AwayTeam':away,'FTHG':home_goals,'FTAG':away_goals},index=[max_ind+1])
     a=a[['Date','HomeTeam','AwayTeam','FTHG','FTAG']]
     return data.append(a)
+
 
 def calibrate(teams, all_data):
     for _country in all_data:
@@ -434,3 +441,4 @@ class Season:
                 _j.grid(True)
 
         fig.set_size_inches(16, 9)
+
