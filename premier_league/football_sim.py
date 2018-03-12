@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
+import os
 
 
 def get_data(urls):
@@ -21,6 +23,68 @@ def add_match(data,home,home_goals,away,away_goals):
     a=pd.DataFrame({'Date':pd.to_datetime('today'),'HomeTeam':home,'AwayTeam':away,'FTHG':home_goals,'FTAG':away_goals},index=[max_ind+1])
     a=a[['Date','HomeTeam','AwayTeam','FTHG','FTAG']]
     return data.append(a)
+
+
+class Calibrator():
+    def __init__(self, file_name, old_teams=dict(), redo=False):
+        self.file_name = file_name
+        self.teams = dict()
+        self.old_teams=old_teams
+        self.processed_matches = []
+        if redo:
+            print('Force recalibrate')
+        if os.path.isfile(file_name):
+            print(file_name, ' exists.')
+        else:
+            print(file_name, ' does not exists')
+
+        if os.path.isfile(file_name) and not redo:
+            print('file exists, loading')
+            self.load()
+            print(len(self.processed_matches))
+        else:
+            self.save()
+
+    def load(self):
+        with open(self.file_name, 'rb') as input:
+            self.teams = pickle.load(input)
+            self.processed_matches = pickle.load(input)
+
+    def save(self):
+        if os.path.isfile(self.file_name):
+            os.remove(self.file_name)
+
+        with open(self.file_name, 'wb') as output:
+            pickle.dump(self.teams, output, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.processed_matches, output, pickle.HIGHEST_PROTOCOL)
+
+    def process_data(self, _data, _country):
+        for index, row in _data.iterrows():
+            home_team_name = row['HomeTeam']
+            away_team_name = row['AwayTeam']
+            if home_team_name not in self.teams:
+                if home_team_name in self.old_teams:
+                    self.teams[home_team_name] = self.old_teams[home_team_name]
+                else:
+                    self.teams[home_team_name] = Team(name=home_team_name, country=_country)
+            if away_team_name not in self.teams:
+                if away_team_name in self.old_teams:
+                    self.teams[away_team_name] = self.old_teams[away_team_name]
+                else:
+                    self.teams[away_team_name] = Team(name=away_team_name, country=_country)
+            date = row['Date'].strftime('%Y-%m-%d')
+            hg = row['FTHG']
+            ag = row['FTAG']
+            this_match = date+home_team_name+away_team_name
+            if this_match not in self.processed_matches:
+                if not (np.isnan(hg) or np.isnan(ag)):
+                    print((date, home_team_name, away_team_name, hg, ag))
+                    self.processed_matches.append(this_match)
+                    self.teams[home_team_name].scored_against(self.teams[away_team_name], hg)
+                    self.teams[away_team_name].scored_against(self.teams[home_team_name], ag)
+                    self.teams[home_team_name].simplify()
+                    self.teams[away_team_name].simplify()
+        self.save()
 
 
 def calibrate(teams, all_data):
