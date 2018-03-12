@@ -57,32 +57,32 @@ class Calibrator():
             pickle.dump(self.teams, output, pickle.HIGHEST_PROTOCOL)
             pickle.dump(self.processed_matches, output, pickle.HIGHEST_PROTOCOL)
 
+    def create_team(self,team_name,country):
+        if team_name not in self.teams:
+            if team_name in self.old_teams:
+                self.teams[team_name] = copy.deepcopy(self.old_teams[team_name])
+                self.teams[team_name].forget()
+            else:
+                self.teams[team_name] = Team(name=team_name, country=country)
+
     def process_data(self, _data, _country):
         for index, row in _data.iterrows():
             home_team_name = row['HomeTeam']
             away_team_name = row['AwayTeam']
-            if home_team_name not in self.teams:
-                if home_team_name in self.old_teams:
-                    self.teams[home_team_name] = copy.deepcopy(self.old_teams[home_team_name])
-                else:
-                    self.teams[home_team_name] = Team(name=home_team_name, country=_country)
-            if away_team_name not in self.teams:
-                if away_team_name in self.old_teams:
-                    self.teams[away_team_name] = copy.deepcopy(self.old_teams[away_team_name])
-                else:
-                    self.teams[away_team_name] = Team(name=away_team_name, country=_country)
+            self.create_team(home_team_name,_country)
+            self.create_team(away_team_name,_country)
             date = row['Date'].strftime('%Y-%m-%d')
             hg = row['FTHG']
             ag = row['FTAG']
             this_match = date+home_team_name+away_team_name
             if this_match not in self.processed_matches:
                 if not (np.isnan(hg) or np.isnan(ag)):
-                    print((date, home_team_name, away_team_name, hg, ag))
+                    #print((date, home_team_name, away_team_name, hg, ag))
                     self.processed_matches.append(this_match)
                     self.teams[home_team_name].scored_against(self.teams[away_team_name], hg)
                     self.teams[away_team_name].scored_against(self.teams[home_team_name], ag)
-                    self.teams[home_team_name].simplify()
-                    self.teams[away_team_name].simplify()
+                    #self.teams[home_team_name].simplify()
+                    #self.teams[away_team_name].simplify()
         self.save()
 
 
@@ -117,7 +117,7 @@ class Team(object):
     def __init__(self, name='team name', country='SH'):
         self.name = name
         self.country = country
-        self.lmbd_set = np.linspace(0, 3, 1001)
+        self.lmbd_set = np.linspace(0, 4, 1001)
         self.p = self.lmbd_set * 0 + 1
         self.p = self.p / self.p.sum()
         self.tau_set = np.linspace(0, 2, 1001)
