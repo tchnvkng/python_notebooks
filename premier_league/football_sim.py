@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import os
-
-
+import copy
 def get_data(urls):
     all_data = dict()
 
@@ -64,12 +63,12 @@ class Calibrator():
             away_team_name = row['AwayTeam']
             if home_team_name not in self.teams:
                 if home_team_name in self.old_teams:
-                    self.teams[home_team_name] = self.old_teams[home_team_name]
+                    self.teams[home_team_name] = copy.deepcopy(self.old_teams[home_team_name])
                 else:
                     self.teams[home_team_name] = Team(name=home_team_name, country=_country)
             if away_team_name not in self.teams:
                 if away_team_name in self.old_teams:
-                    self.teams[away_team_name] = self.old_teams[away_team_name]
+                    self.teams[away_team_name] = copy.deepcopy(self.old_teams[away_team_name])
                 else:
                     self.teams[away_team_name] = Team(name=away_team_name, country=_country)
             date = row['Date'].strftime('%Y-%m-%d')
