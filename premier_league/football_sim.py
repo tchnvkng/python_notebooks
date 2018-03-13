@@ -71,16 +71,20 @@ class Calibrator():
             away_team_name = row['AwayTeam']
             self.create_team(home_team_name,_country)
             self.create_team(away_team_name,_country)
+            self.create_team('Home'+_country,_country+'0')
+            self.create_team('Away'+_country,_country+'0')
             date = row['Date'].strftime('%Y-%m-%d')
             hg = row['FTHG']
             ag = row['FTAG']
             this_match = date+home_team_name+away_team_name
             if this_match not in self.processed_matches:
                 if not (np.isnan(hg) or np.isnan(ag)):
-                    #print((date, home_team_name, away_team_name, hg, ag))
+                    print((date, home_team_name, away_team_name, hg, ag))
                     self.processed_matches.append(this_match)
                     self.teams[home_team_name].scored_against(self.teams[away_team_name], hg)
                     self.teams[away_team_name].scored_against(self.teams[home_team_name], ag)
+                    self.teams['Home'+_country].scored_against(self.teams['Away'+_country], hg)
+                    self.teams['Away'+_country].scored_against(self.teams['Home'+_country], ag)
                     #self.teams[home_team_name].simplify()
                     #self.teams[away_team_name].simplify()
         self.save()
