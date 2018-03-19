@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pickle
 import os
 import copy
+plt.rcParams['figure.figsize']=[16,9]
 def get_data(urls):
     all_data = dict()
 
@@ -171,12 +172,13 @@ class Team(object):
         plt.grid()
         plt.title(g.mean(axis=0))
 
-    def vs(self, other_team, n=int(1e4)):
+    def vs(self, other_team, n=int(1e4),home_advantage=np.array([0,0])):
         lH = np.random.choice(self.lmbd_set, size=n, p=self.p) + np.random.choice(other_team.tau_set, size=n,
-                                                                                  p=other_team.q)
+                                                                                  p=other_team.q)+home_advantage[0]
         gH = np.random.poisson(lH)
         lA = np.random.choice(self.tau_set, size=n, p=self.q) + np.random.choice(other_team.lmbd_set, size=n,
-                                                                                 p=other_team.p)
+                                                                                 p=other_team.p)+home_advantage[1]
+        lA=np.maximum(lA,0)
         gA = np.random.poisson(lA)
         match_des = self.name + ' vs ' + other_team.name
         return gH, gA, match_des
@@ -219,8 +221,9 @@ def p_plot(x):
 
 
 class Season:
-    def __init__(self, teams, nr_cl=4, nr_degr=3):
+    def __init__(self, teams, nr_cl=4, nr_degr=3,home_advantage=np.array([0,0])):
         self.teams = teams
+        self.home_advantage=home_advantage
         self.nr_cl = nr_cl
         self.nr_degr = nr_degr
         self.nr_teams = len(teams)
@@ -281,7 +284,7 @@ class Season:
             self.match_id[match] = i
             home_team = self.teams[self.matches_to_sim[match]['Home']]
             away_team = self.teams[self.matches_to_sim[match]['Away']]
-            gH, gA, _ = home_team.vs(away_team, n=n_scenarios)
+            gH, gA, _ = home_team.vs(away_team, n=n_scenarios,home_advantage=self.home_advantage)
             self.simulated_home_goals[i, :] = gH
             self.simulated_away_goals[i, :] = gA
             i += 1
