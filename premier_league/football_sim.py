@@ -291,7 +291,7 @@ class Season:
         self.simulation_done = True
         self.simulation_processed = False
 
-    def what_if(self, match, ref_team='Man United',show_plot=True):
+    def what_if(self, match, ref_team='Man United',show_plot=True,place=4,or_better=True):
         if not self.simulation_done:
             print('simulation not yet done, simulating')
             self.simulate_season()
@@ -314,10 +314,18 @@ class Season:
         place_if_away = self.place_per_team[ref_team_id, away_won]
         place_if_draw = self.place_per_team[ref_team_id, draw]
         p_cl=np.zeros(4)
-        p_cl[0] = 100 * (self.place_per_team[ref_team_id] <= 4).sum() / self.place_per_team[ref_team_id].shape[0]
-        p_cl[1] = 100 * (place_if_home <= 4).sum() / place_if_home.shape[0]
-        p_cl[2] = 100 * (place_if_away <= 4).sum() / place_if_away.shape[0]
-        p_cl[3] = 100 * (place_if_draw <= 4).sum() / place_if_draw.shape[0]
+        if or_better:
+            p_cl[0] = 100 * (self.place_per_team[ref_team_id] <= place).sum() / self.place_per_team[ref_team_id].shape[0]
+            p_cl[1] = 100 * (place_if_home <= place).sum() / place_if_home.shape[0]
+            p_cl[2] = 100 * (place_if_away <= place).sum() / place_if_away.shape[0]
+            p_cl[3] = 100 * (place_if_draw <= place).sum() / place_if_draw.shape[0]
+        else:
+            p_cl[0] = 100 * (self.place_per_team[ref_team_id] == place).sum() / self.place_per_team[ref_team_id].shape[0]
+            p_cl[1] = 100 * (place_if_home == place).sum() / place_if_home.shape[0]
+            p_cl[2] = 100 * (place_if_away == place).sum() / place_if_away.shape[0]
+            p_cl[3] = 100 * (place_if_draw == place).sum() / place_if_draw.shape[0]
+
+
 
         if show_plot:
             fig, ax = plt.subplots(1, 1)
