@@ -18,10 +18,13 @@ def get_data(urls):
     return all_data
 
 
-def add_match(data,home,home_goals,away,away_goals):
-    max_ind=data.index.max()
-    a=pd.DataFrame({'Date':pd.to_datetime('today'),'HomeTeam':home,'AwayTeam':away,'FTHG':home_goals,'FTAG':away_goals},index=[max_ind+1])
-    a=a[['Date','HomeTeam','AwayTeam','FTHG','FTAG']]
+def add_match(data, home, home_goals, away, away_goals,the_date=pd.to_datetime('today')):
+    if data.index.shape[0]>0:
+        max_ind = data.index.max()
+    else:
+        max_ind = 0
+    a = pd.DataFrame({'Date': the_date, 'HomeTeam': home, 'AwayTeam': away, 'FTHG': home_goals, 'FTAG': away_goals}, index=[max_ind + 1])
+    a = a[['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']]
     return data.append(a)
 
 
